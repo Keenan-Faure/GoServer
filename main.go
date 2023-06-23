@@ -1,58 +1,58 @@
 package main
 
 import (
+	"log"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
 )
 
-const baseAddress = ":8080"
+const port = "8080"
+const filePath = "./app"
 
 func main() {
-	// webServer()
-	fileServer()
-}
+	apiCfg := apiConfig{
+		fileserverHits: 0,
+	}
 
-func fileServer() {
-	mux := http.NewServeMux()
-	fs := http.FileServer(http.Dir("./app/"))
-	mux.Handle("/app/", http.StripPrefix("/app", fs))
+	//creates new Chi router
+	r := chi.NewRouter()
+	api_router := chi.NewRouter()
+	admin_router := chi.NewRouter()
 
-	//HandleFunc registers the handler function for the given pattern.
-	//endpoint
-	mux.HandleFunc("/healthz", healthz)
+	fs := http.FileServer(http.Dir(filePath))
 
-	http.ListenAndServe(baseAddress, middlewareCors(mux))
-}
+	//Wrap the http.FileServer handler with the middleware
+	fsHandle := http.StripPrefix("/app", apiCfg.middlewareMetricsInc(fs))
+	r.Handle("/app", fsHandle)
+	r.Handle("/app/*", fsHandle)
 
-func webServer() {
-	mux := http.NewServeMux()
+	//Create a new router to bind the /healthz and /metrics to register the endpoints on,
+	//and then r.Mount() that router at /api in our main router.
+	api_router.Get("/healthz", healthz)
+	admin_router.Get("/metrics", apiCfg.metrics)
 
-	//any software or service that enables the parts of a system to communicate and manage data
-	corsMux := middlewareCors(mux)
+	//re-routes the localhost:8080/metrics to be localhost:8080/api/metrics
+	r.Mount("/api", api_router)
+	r.Mount("/admin", admin_router)
+
+	corsMux := middlewareCors(r)
 
 	server := &http.Server{
-		Addr:    baseAddress,
+		Addr:    ":" + port,
 		Handler: corsMux,
 	}
-	server.ListenAndServe()
+	log.Printf("Serving files from %s on port %s", filePath, port)
+	log.Fatal(server.ListenAndServe())
 }
 
-// Acts as the middleware that adds CORS headers to the response
-func middlewareCors(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
-		w.Header().Set("Access-Control-Allow-Headers", "*")
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
-}
+//Middleware is a way to wrap a handler with additional functionality.
+//It is a common pattern in web applications that allows us to write DRY code.
+//For example, we can write a middleware that logs every request to the server.
+//We can then wrap our handler with this middleware and every request will be logged
+//without us having to write the logging code in every handler.
 
-// Custom handlers
+//The `middlewareMetricsInc` is a middleWare because it is a handler that simply increments
+//on each request
 
-func healthz(writer http.ResponseWriter, reader *http.Request) {
-	writer.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	writer.Write([]byte("OK"))
-}
+//The `middleWare` is a middleware because it adds the headers to the handler
