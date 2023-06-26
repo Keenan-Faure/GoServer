@@ -1,7 +1,7 @@
 module goserver
 
-go 1.20
+replace internal/db => ./internal/db
 
-replace internal/database => ./internal/database
+go 1.20
 
 require github.com/go-chi/chi/v5 v5.0.8
