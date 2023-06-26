@@ -33,10 +33,10 @@ func (cfg *apiConfig) metrics(w http.ResponseWriter, r *http.Request) {
 }
 
 // middleware to log every request to server
-func middleWareLog(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(r.URL)
-		fmt.Println(r.Method)
-		next.ServeHTTP(w, r)
-	})
-}
+// func middleWareLog(next http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		fmt.Println(r.URL)
+// 		fmt.Println(r.Method)
+// 		next.ServeHTTP(w, r)
+// 	})
+// }

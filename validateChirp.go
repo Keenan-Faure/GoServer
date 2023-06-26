@@ -7,18 +7,20 @@ import (
 	"strings"
 )
 
-type chirp struct {
+type Chirp struct {
+	ID   int    `json:"id"`
 	Body string `json:"body"`
 }
 
 type responseBody struct {
-	Cleaned_body string `json:"cleaned_body"`
+	ID   int    `json:"id"`
+	Body string `json:"body"`
 }
 
 // decodes the data sent over the request body
 func validate_chirp(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
-	params := chirp{}
+	params := Chirp{}
 	err := decoder.Decode(&params)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Something went wrong")
@@ -31,7 +33,8 @@ func validate_chirp(w http.ResponseWriter, r *http.Request) {
 			respondWithError(w, http.StatusBadRequest, "invalid request body")
 		} else {
 			respondWithJSON(w, http.StatusOK, responseBody{
-				Cleaned_body: validated,
+				ID:   0,
+				Body: validated,
 			})
 		}
 		return
@@ -39,22 +42,22 @@ func validate_chirp(w http.ResponseWriter, r *http.Request) {
 	respondWithError(w, 400, "Chirp is too long")
 }
 
-func encode_chirp(w http.ResponseWriter, r *http.Request, data chirp) {
-	defer r.Body.Close()
+// func encode_chirp(w http.ResponseWriter, r *http.Request, data Chirp) {
+// 	defer r.Body.Close()
 
-	type responseBody struct {
-		error string
-	}
+// 	type responseBody struct {
+// 		error string
+// 	}
 
-	dat, err := json.Marshal(data)
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "error marshalling JSON "+err.Error())
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(dat)
-}
+// 	dat, err := json.Marshal(data)
+// 	if err != nil {
+// 		respondWithError(w, http.StatusInternalServerError, "error marshalling JSON "+err.Error())
+// 		return
+// 	}
+// 	w.Header().Set("Content-Type", "application/json")
+// 	w.WriteHeader(http.StatusOK)
+// 	w.Write(dat)
+// }
 
 func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) error {
 	response, err := json.Marshal(payload)
