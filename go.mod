@@ -1,5 +1,7 @@
 module goserver
 
+replace internal/validateChirp => ./internal/validateChirp
+
 replace internal/db => ./internal/db
 
 go 1.20

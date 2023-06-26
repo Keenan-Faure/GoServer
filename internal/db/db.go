@@ -57,7 +57,7 @@ func (db *DB) CreateChirp(body string) (Chirp, error) {
 func (db *DB) ensureDB() error {
 	rawData := DBStructure{}
 	data, _ := json.MarshalIndent(rawData, "", " ")
-	err := ioutil.WriteFile("test.json", data, 0644)
+	err := ioutil.WriteFile(db.path, data, 0644)
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func (db *DB) writeDB(dbStructure DBStructure) error {
 	data, _ := json.MarshalIndent(dbStructure, "", " ")
 	db.mux.Lock()
 	defer db.mux.Unlock()
-	err := ioutil.WriteFile("test.json", data, 0644)
+	err := ioutil.WriteFile(db.path, data, 0644)
 	if err != nil {
 		return err
 	}
