@@ -3,8 +3,8 @@ package db
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"os"
+	"sort"
 	"sync"
 )
 
@@ -43,21 +43,29 @@ func NewDB(path string) (*DB, error) {
 // CreateChirp creates a new chirp and saves it to disk
 func (db *DB) CreateChirp(body string) (Chirp, error) {
 	//get the ID of the new Chirp
-	data, err := db.loadDB()
+	data, err := db.LoadDB()
 	if err != nil {
 		return Chirp{}, err
 	}
 	newChirp := Chirp{
-		ID:   len(data.Chirps),
+		ID:   len(data.Chirps) + 1,
 		Body: body,
+	}
+	data.Chirps[len(data.Chirps)+1] = newChirp
+	err = db.writeDB(data)
+	if err != nil {
+		return Chirp{}, err
 	}
 	return newChirp, nil
 }
 
+// ensureDB creates a new database file if it doesn't exist
 func (db *DB) ensureDB() error {
-	rawData := DBStructure{}
+	rawData := DBStructure{
+		Chirps: make(map[int]Chirp),
+	}
 	data, _ := json.MarshalIndent(rawData, "", " ")
-	err := ioutil.WriteFile(db.path, data, 0644)
+	err := os.WriteFile(db.path, data, 0644)
 	if err != nil {
 		return err
 	}
@@ -66,25 +74,22 @@ func (db *DB) ensureDB() error {
 
 // GetChirps returns all chirps in the database
 func (db *DB) GetChirps() ([]Chirp, error) {
-	chirps := []Chirp{}
-	data, err := db.loadDB()
+	data, err := db.LoadDB()
 	if err != nil {
-		return chirps, err
+		return []Chirp{}, err
 	}
-	for _, value := range data.Chirps {
-		chirps = append(chirps, value)
-	}
+	chirps := SortChirps(data.Chirps)
 	return chirps, nil
 }
 
-// checks if a file exists
+// checkFileExists checks if a file exists
 func checkFileExists(filePath string) bool {
 	_, error := os.Stat(filePath)
-	//return !os.IsNotExist(err)
 	return !errors.Is(error, os.ErrNotExist)
 }
 
-func (db *DB) loadDB() (DBStructure, error) {
+// loadDB reads the database file into memory
+func (db *DB) LoadDB() (DBStructure, error) {
 	rawData, err := os.ReadFile(db.path)
 	if err != nil {
 		return DBStructure{}, err
@@ -101,9 +106,39 @@ func (db *DB) writeDB(dbStructure DBStructure) error {
 	data, _ := json.MarshalIndent(dbStructure, "", " ")
 	db.mux.Lock()
 	defer db.mux.Unlock()
-	err := ioutil.WriteFile(db.path, data, 0644)
+	err := os.WriteFile(db.path, data, 0644)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+// sorts the chirps in ascending order
+func SortChirps(chirps map[int]Chirp) []Chirp {
+	result := []Chirp{}
+	if len(chirps) == 0 {
+		return result
+	}
+
+	keys := make([]int, 0, len(chirps))
+	for k := range chirps {
+		keys = append(keys, k)
+	}
+
+	sort.Ints(keys)
+	for _, k := range keys {
+		result = append(result, chirps[k])
+	}
+	return result
+}
+
+// retrieves a chirp that has the respective `id`
+func RetrieveChirp(id int, chirps map[int]Chirp) (Chirp, bool) {
+	for key, value := range chirps {
+		if key == id {
+			return value, true
+		}
+		continue
+	}
+	return Chirp{}, false
 }

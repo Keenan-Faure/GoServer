@@ -1,6 +1,6 @@
 module goserver
 
-replace internal/validateChirp => ./internal/validateChirp
+replace internal/api => ./internal/api
 
 replace internal/db => ./internal/db
 

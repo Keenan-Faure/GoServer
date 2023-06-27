@@ -1,9 +1,9 @@
 package main
 
 import (
+	"api"
 	"log"
 	"net/http"
-	"validateChirp"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -31,8 +31,9 @@ func main() {
 	//Create a new router to bind the /healthz and /metrics to register the endpoints on,
 	//and then r.Mount() that router at /api in our main router.
 	api_router.Get("/healthz", healthz)
-	api_router.Post("/chirps", validateChirp.Validate_chirp)
-	api_router.Get("/chirps", validateChirp.Validate_chirp)
+	api_router.Post("/chirps", api.PostValidate)
+	api_router.Get("/chirps", api.GetChirps)
+	api_router.Get("/chirps/{chirpID}", api.GetChirp)
 	admin_router.Get("/metrics", apiCfg.metrics)
 
 	//re-routes the localhost:8080/metrics to be localhost:8080/api/metrics

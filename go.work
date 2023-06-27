@@ -3,5 +3,5 @@ go 1.20
 use (
 	.
 	./internal/db
-	./internal/validateChirp
+	./internal/api
 )
