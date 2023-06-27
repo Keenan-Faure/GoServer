@@ -13,6 +13,11 @@ type Chirp struct {
 	Body string `json:"body"`
 }
 
+type User struct {
+	ID    int    `json:"id"`
+	Email string `json:"email"`
+}
+
 type DB struct {
 	path string
 	mux  *sync.RWMutex
@@ -20,6 +25,7 @@ type DB struct {
 
 type DBStructure struct {
 	Chirps map[int]Chirp `json:"chirps"`
+	Users  map[int]User  `json:"users"`
 }
 
 // NewDB creates a new database connection
@@ -29,7 +35,7 @@ func NewDB(path string) (*DB, error) {
 		path: path,
 		mux:  &sync.RWMutex{},
 	}
-	if !checkFileExists(path) {
+	if !CheckFileExists(path) {
 		//creates db
 		err := db.ensureDB()
 		if err != nil {
@@ -63,6 +69,7 @@ func (db *DB) CreateChirp(body string) (Chirp, error) {
 func (db *DB) ensureDB() error {
 	rawData := DBStructure{
 		Chirps: make(map[int]Chirp),
+		Users:  make(map[int]User),
 	}
 	data, _ := json.MarshalIndent(rawData, "", " ")
 	err := os.WriteFile(db.path, data, 0644)
@@ -83,7 +90,7 @@ func (db *DB) GetChirps() ([]Chirp, error) {
 }
 
 // checkFileExists checks if a file exists
-func checkFileExists(filePath string) bool {
+func CheckFileExists(filePath string) bool {
 	_, error := os.Stat(filePath)
 	return !errors.Is(error, os.ErrNotExist)
 }
@@ -94,11 +101,11 @@ func (db *DB) LoadDB() (DBStructure, error) {
 	if err != nil {
 		return DBStructure{}, err
 	}
-	var chirpdb DBStructure
+	var dbstruct DBStructure
 	db.mux.Lock()
 	defer db.mux.Unlock()
-	json.Unmarshal(rawData, &chirpdb)
-	return chirpdb, nil
+	json.Unmarshal(rawData, &dbstruct)
+	return dbstruct, nil
 }
 
 // writeDB writes the database file to disk
@@ -141,4 +148,23 @@ func RetrieveChirp(id int, chirps map[int]Chirp) (Chirp, bool) {
 		continue
 	}
 	return Chirp{}, false
+}
+
+// creates a new User and saves it to disk
+func (db *DB) CreateUser(email string) (User, error) {
+	//get the ID of the new Chirp
+	data, err := db.LoadDB()
+	if err != nil {
+		return User{}, err
+	}
+	newUser := User{
+		ID:    len(data.Users) + 1,
+		Email: email,
+	}
+	data.Users[len(data.Users)+1] = newUser
+	err = db.writeDB(data)
+	if err != nil {
+		return User{}, err
+	}
+	return newUser, nil
 }

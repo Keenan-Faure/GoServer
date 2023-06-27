@@ -11,12 +11,11 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type requestBody struct {
+type requestBodyChirp struct {
 	Body string `json:"body"`
 }
 
-type User struct {
-	ID    int    `json:"id"`
+type requestBodyUser struct {
 	Email string `json:"email"`
 }
 
@@ -25,29 +24,25 @@ const dbPath = "./database.json"
 // posts data to add a new user
 func PostUser(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
-	params := requestBody{}
+	params := requestBodyUser{}
 	err := decoder.Decode(&params)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
 		return
 	}
-	if len(params.Body) < 140 {
-		validated, err := profane(params.Body)
+	if len(params.Email) > 0 {
+		data := params.Email
+		Db, err := db.NewDB(dbPath)
 		if err != nil {
-			RespondWithError(w, http.StatusBadRequest, "invalid request body")
-		} else {
-			Db, err := db.NewDB(dbPath)
-			if err != nil {
-				RespondWithError(w, http.StatusInternalServerError, "Error: "+err.Error())
-				return
-			}
-			chirp, err := Db.CreateChirp(validated)
-			if err != nil {
-				RespondWithError(w, http.StatusInternalServerError, "Error: "+err.Error())
-				return
-			}
-			RespondWithJSON(w, http.StatusCreated, chirp)
+			RespondWithError(w, http.StatusInternalServerError, "Error: "+err.Error())
+			return
 		}
+		user, err := Db.CreateUser(data)
+		if err != nil {
+			RespondWithError(w, http.StatusInternalServerError, "Error: "+err.Error())
+			return
+		}
+		RespondWithJSON(w, http.StatusCreated, user)
 		return
 	}
 	RespondWithError(w, http.StatusBadRequest, "Chirp is too long")
@@ -56,7 +51,7 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 // posts data to the database to add a chirp
 func PostValidate(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
-	params := requestBody{}
+	params := requestBodyChirp{}
 	err := decoder.Decode(&params)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Something went wrong")

@@ -84,8 +84,8 @@ func TestEnsureDb(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected error to be nil but found %s", err.Error())
 	}
-	if !checkFileExists(dbPath) {
-		t.Errorf("Expected 'true' but found %v", !checkFileExists(dbPath))
+	if !CheckFileExists(dbPath) {
+		t.Errorf("Expected 'true' but found %v", !CheckFileExists(dbPath))
 	}
 
 	fmt.Println("Test case 2 - DB does exist")
@@ -97,8 +97,8 @@ func TestEnsureDb(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected error to be nil but found %s", err.Error())
 	}
-	if !checkFileExists(dbPath) {
-		t.Errorf("Expected 'true' but found %v", !checkFileExists(dbPath))
+	if !CheckFileExists(dbPath) {
+		t.Errorf("Expected 'true' but found %v", !CheckFileExists(dbPath))
 	}
 	os.Remove(dbPath)
 }
@@ -213,6 +213,7 @@ func TestSortChirps(t *testing.T) {
 	if len(result) != 3 {
 		t.Errorf("Expected 3 but found %d", len(result))
 	}
+	os.Remove(dbPath)
 }
 
 func TestRetrieveChirp(t *testing.T) {

@@ -2,8 +2,11 @@ package main
 
 import (
 	"api"
+	"db"
+	"flag"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -14,6 +17,16 @@ const filePath = "./app"
 func main() {
 	apiCfg := apiConfig{
 		fileserverHits: 0,
+	}
+
+	dbg := flag.Bool("debug", false, "Enable debug mode")
+	flag.Parse()
+
+	if *dbg {
+		//remove database
+		if db.CheckFileExists("./database.json") {
+			os.Remove("./database.json")
+		}
 	}
 
 	//creates new Chi router
@@ -32,6 +45,7 @@ func main() {
 	//and then r.Mount() that router at /api in our main router.
 	api_router.Get("/healthz", healthz)
 	api_router.Post("/chirps", api.PostValidate)
+	api_router.Post("/users", api.PostUser)
 	api_router.Get("/chirps", api.GetChirps)
 	api_router.Get("/chirps/{chirpID}", api.GetChirp)
 	admin_router.Get("/metrics", apiCfg.metrics)
