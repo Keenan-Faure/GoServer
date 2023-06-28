@@ -4,4 +4,6 @@ use (
 	.
 	./internal/db
 	./internal/api
+	./internal/utils
+	./internal/objects
 )

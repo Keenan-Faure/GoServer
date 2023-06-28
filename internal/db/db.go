@@ -3,29 +3,18 @@ package db
 import (
 	"encoding/json"
 	"errors"
+	"objects"
 	"os"
 	"sort"
 	"sync"
+	"utils"
+
+	"golang.org/x/crypto/bcrypt"
 )
-
-type Chirp struct {
-	ID   int    `json:"id"`
-	Body string `json:"body"`
-}
-
-type User struct {
-	ID    int    `json:"id"`
-	Email string `json:"email"`
-}
 
 type DB struct {
 	path string
 	mux  *sync.RWMutex
-}
-
-type DBStructure struct {
-	Chirps map[int]Chirp `json:"chirps"`
-	Users  map[int]User  `json:"users"`
 }
 
 // NewDB creates a new database connection
@@ -47,29 +36,36 @@ func NewDB(path string) (*DB, error) {
 }
 
 // CreateChirp creates a new chirp and saves it to disk
-func (db *DB) CreateChirp(body string) (Chirp, error) {
+func (db *DB) CreateChirp(body string) (objects.Chirp, error) {
 	//get the ID of the new Chirp
 	data, err := db.LoadDB()
 	if err != nil {
-		return Chirp{}, err
+		return objects.Chirp{}, err
 	}
-	newChirp := Chirp{
+	newChirp := objects.Chirp{
 		ID:   len(data.Chirps) + 1,
 		Body: body,
 	}
-	data.Chirps[len(data.Chirps)+1] = newChirp
+	db.AddChirp(data, newChirp)
 	err = db.writeDB(data)
 	if err != nil {
-		return Chirp{}, err
+		return objects.Chirp{}, err
 	}
 	return newChirp, nil
 }
 
+// AddChirp to Database
+func (db *DB) AddChirp(data objects.DBStructure, chirp objects.Chirp) {
+	db.mux.Lock()
+	defer db.mux.Unlock()
+	data.Chirps[len(data.Chirps)+1] = chirp
+}
+
 // ensureDB creates a new database file if it doesn't exist
 func (db *DB) ensureDB() error {
-	rawData := DBStructure{
-		Chirps: make(map[int]Chirp),
-		Users:  make(map[int]User),
+	rawData := objects.DBStructure{
+		Chirps: make(map[int]objects.Chirp),
+		Users:  make(map[int]objects.User),
 	}
 	data, _ := json.MarshalIndent(rawData, "", " ")
 	err := os.WriteFile(db.path, data, 0644)
@@ -80,10 +76,10 @@ func (db *DB) ensureDB() error {
 }
 
 // GetChirps returns all chirps in the database
-func (db *DB) GetChirps() ([]Chirp, error) {
+func (db *DB) GetChirps() ([]objects.Chirp, error) {
 	data, err := db.LoadDB()
 	if err != nil {
-		return []Chirp{}, err
+		return []objects.Chirp{}, err
 	}
 	chirps := SortChirps(data.Chirps)
 	return chirps, nil
@@ -96,12 +92,12 @@ func CheckFileExists(filePath string) bool {
 }
 
 // loadDB reads the database file into memory
-func (db *DB) LoadDB() (DBStructure, error) {
+func (db *DB) LoadDB() (objects.DBStructure, error) {
 	rawData, err := os.ReadFile(db.path)
 	if err != nil {
-		return DBStructure{}, err
+		return objects.DBStructure{}, err
 	}
-	var dbstruct DBStructure
+	var dbstruct objects.DBStructure
 	db.mux.Lock()
 	defer db.mux.Unlock()
 	json.Unmarshal(rawData, &dbstruct)
@@ -109,7 +105,7 @@ func (db *DB) LoadDB() (DBStructure, error) {
 }
 
 // writeDB writes the database file to disk
-func (db *DB) writeDB(dbStructure DBStructure) error {
+func (db *DB) writeDB(dbStructure objects.DBStructure) error {
 	data, _ := json.MarshalIndent(dbStructure, "", " ")
 	db.mux.Lock()
 	defer db.mux.Unlock()
@@ -121,8 +117,8 @@ func (db *DB) writeDB(dbStructure DBStructure) error {
 }
 
 // sorts the chirps in ascending order
-func SortChirps(chirps map[int]Chirp) []Chirp {
-	result := []Chirp{}
+func SortChirps(chirps map[int]objects.Chirp) []objects.Chirp {
+	result := []objects.Chirp{}
 	if len(chirps) == 0 {
 		return result
 	}
@@ -140,31 +136,69 @@ func SortChirps(chirps map[int]Chirp) []Chirp {
 }
 
 // retrieves a chirp that has the respective `id`
-func RetrieveChirp(id int, chirps map[int]Chirp) (Chirp, bool) {
+func RetrieveChirp(id int, chirps map[int]objects.Chirp) (objects.Chirp, bool) {
 	for key, value := range chirps {
 		if key == id {
 			return value, true
 		}
 		continue
 	}
-	return Chirp{}, false
+	return objects.Chirp{}, false
 }
 
 // creates a new User and saves it to disk
-func (db *DB) CreateUser(email string) (User, error) {
+func (db *DB) CreateUser(email string, password []byte) (objects.User, error) {
 	//get the ID of the new Chirp
 	data, err := db.LoadDB()
 	if err != nil {
-		return User{}, err
+		return objects.User{}, err
 	}
-	newUser := User{
-		ID:    len(data.Users) + 1,
-		Email: email,
+	exist, err := ValidateUser(data, email)
+	if exist {
+		return objects.User{}, err
+	}
+	hashedPwd, err := utils.HashPassword(password)
+	if err != nil {
+		return objects.User{}, err
+	}
+	newUser := objects.User{
+		ID:       len(data.Users) + 1,
+		Email:    email,
+		Password: hashedPwd,
 	}
 	data.Users[len(data.Users)+1] = newUser
 	err = db.writeDB(data)
 	if err != nil {
-		return User{}, err
+		return objects.User{}, err
 	}
 	return newUser, nil
+}
+
+//Db Utils
+
+// validateUser confirms if a user with the same email already exists
+func ValidateUser(data objects.DBStructure, email string) (bool, error) {
+	for _, value := range data.Users {
+		if value.Email == email {
+			return true, errors.New("user with email already exists")
+		}
+		continue
+	}
+	return false, nil
+}
+
+// If the password exists it returns the record of the user and nil if found
+func ValidateLogin(data objects.DBStructure, email string, password []byte) (objects.User, error) {
+	_, err := ValidateUser(data, email)
+	if err == nil {
+		return objects.User{}, errors.New("user with email " + email + " does not exist")
+	}
+	for _, value := range data.Users {
+		valid := bcrypt.CompareHashAndPassword(value.Password, password)
+		if valid == nil {
+			return value, nil
+		}
+		continue
+	}
+	return objects.User{}, errors.New("password does not exist in database")
 }

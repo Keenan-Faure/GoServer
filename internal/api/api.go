@@ -5,53 +5,76 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"objects"
 	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
 )
 
-type requestBodyChirp struct {
-	Body string `json:"body"`
-}
-
-type requestBodyUser struct {
-	Email string `json:"email"`
-}
-
 const dbPath = "./database.json"
 
-// posts data to add a new user
-func PostUser(w http.ResponseWriter, r *http.Request) {
+// login function
+func UserLogin(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
-	params := requestBodyUser{}
+	params := objects.RequestBodyLogin{}
 	err := decoder.Decode(&params)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
 		return
 	}
-	if len(params.Email) > 0 {
-		data := params.Email
-		Db, err := db.NewDB(dbPath)
-		if err != nil {
-			RespondWithError(w, http.StatusInternalServerError, "Error: "+err.Error())
-			return
-		}
-		user, err := Db.CreateUser(data)
-		if err != nil {
-			RespondWithError(w, http.StatusInternalServerError, "Error: "+err.Error())
-			return
-		}
-		RespondWithJSON(w, http.StatusCreated, user)
+	Db, err := db.NewDB(dbPath)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Error: "+err.Error())
 		return
 	}
-	RespondWithError(w, http.StatusBadRequest, "Chirp is too long")
+	dbstruct, err := Db.LoadDB()
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Error: "+err.Error())
+		return
+	}
+	usr, err := db.ValidateLogin(dbstruct, params.Email, []byte(params.Password))
+	if err != nil {
+		RespondWithError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+	response := objects.ResponseUser{
+		ID:    usr.ID,
+		Email: usr.Email,
+	}
+	RespondWithJSON(w, http.StatusOK, response)
+}
+
+// posts data to add a new user
+func PostUser(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	params := objects.RequestBodyUser{}
+	err := decoder.Decode(&params)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		return
+	}
+	Db, err := db.NewDB(dbPath)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Error: "+err.Error())
+		return
+	}
+	user, err := Db.CreateUser(params.Email, []byte(params.Password))
+	response := objects.ResponseUser{
+		ID:    user.ID,
+		Email: user.Email,
+	}
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Error: "+err.Error())
+		return
+	}
+	RespondWithJSON(w, http.StatusCreated, response)
 }
 
 // posts data to the database to add a chirp
 func PostValidate(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
-	params := requestBodyChirp{}
+	params := objects.RequestBodyChirp{}
 	err := decoder.Decode(&params)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Something went wrong")

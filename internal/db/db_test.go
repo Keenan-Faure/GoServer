@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"objects"
 	"os"
 	"testing"
 )
@@ -12,12 +13,12 @@ func TestNewDB(t *testing.T) {
 	fmt.Println("Test case 1 - DB does not exist")
 	_, err := NewDB(dbPath)
 	if err != nil {
-		t.Errorf("Expected no error, but found error")
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
 	fmt.Println("Test case 1 - DB does exist")
 	_, err = NewDB(dbPath)
 	if err != nil {
-		t.Errorf("Expected no error, but found error")
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
 	os.Remove(dbPath)
 }
@@ -26,7 +27,7 @@ func TestCreateChirp(t *testing.T) {
 	fmt.Println("Test case 1 - DB does not exist")
 	Db, err := NewDB(dbPath)
 	if err != nil {
-		t.Errorf("Expected error to be nil but found %s", err.Error())
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
 	chirp, err := Db.CreateChirp("Test")
 	if err != nil {
@@ -46,7 +47,7 @@ func TestCreateChirp(t *testing.T) {
 	}
 	chirp, err = Db.CreateChirp("Test")
 	if err != nil {
-		t.Errorf("Expected nil but found error")
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
 	if chirp.ID != 2 {
 		t.Errorf("Expected 2 but found %d", chirp.ID)
@@ -58,15 +59,15 @@ func TestCreateChirp(t *testing.T) {
 	fmt.Println("Test case 3 - Appending new Chirp and load from disk")
 	Db, err = NewDB(dbPath)
 	if err != nil {
-		t.Errorf("Expected error to be nil but found %s", err.Error())
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
 	chirp, err = Db.CreateChirp("Test String")
 	if err != nil {
-		t.Errorf("Expected error to be nil but found %s", err.Error())
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
 	chirps, err := Db.GetChirps()
 	if err != nil {
-		t.Errorf("Expected error to be nil but found %s", err.Error())
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
 	if len(chirps) != 3 {
 		t.Errorf("Expected '0' but found %d", len(chirps))
@@ -78,11 +79,11 @@ func TestEnsureDb(t *testing.T) {
 	fmt.Println("Test case 1 - DB does not exist")
 	Db, err := NewDB(dbPath)
 	if err != nil {
-		t.Errorf("Expected error to be nil but found %s", err.Error())
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
 	err = Db.ensureDB()
 	if err != nil {
-		t.Errorf("Expected error to be nil but found %s", err.Error())
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
 	if !CheckFileExists(dbPath) {
 		t.Errorf("Expected 'true' but found %v", !CheckFileExists(dbPath))
@@ -91,11 +92,11 @@ func TestEnsureDb(t *testing.T) {
 	fmt.Println("Test case 2 - DB does exist")
 	Db, err = NewDB(dbPath)
 	if err != nil {
-		t.Errorf("Expected error to be nil but found %s", err.Error())
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
 	err = Db.ensureDB()
 	if err != nil {
-		t.Errorf("Expected error to be nil but found %s", err.Error())
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
 	if !CheckFileExists(dbPath) {
 		t.Errorf("Expected 'true' but found %v", !CheckFileExists(dbPath))
@@ -107,11 +108,11 @@ func TestGetChirps(t *testing.T) {
 	fmt.Println("Test case 1 - DB does not exist")
 	Db, err := NewDB(dbPath)
 	if err != nil {
-		t.Errorf("Expected error to be nil but found %s", err.Error())
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
 	chirps, err := Db.GetChirps()
 	if err != nil {
-		t.Errorf("Expected error to be nil but found %s", err.Error())
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
 	if len(chirps) > 0 {
 		t.Errorf("Expected '0' but found %d", len(chirps))
@@ -120,12 +121,12 @@ func TestGetChirps(t *testing.T) {
 	fmt.Println("Test case 2 - DB does exist && added a chirp")
 	Db, err = NewDB(dbPath)
 	if err != nil {
-		t.Errorf("Expected error to be nil but found %s", err.Error())
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
 	Db.CreateChirp("Test String")
 	chirps, err = Db.GetChirps()
 	if err != nil {
-		t.Errorf("Expected error to be nil but found %s", err.Error())
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
 	if len(chirps) != 1 {
 		t.Errorf("Expected '0' but found %d", len(chirps))
@@ -137,11 +138,11 @@ func TestLoadDb(t *testing.T) {
 	fmt.Println("Test case 1 - DB does not exist")
 	Db, err := NewDB(dbPath)
 	if err != nil {
-		t.Errorf("Expected error to be nil but found %s", err.Error())
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
 	data, err := Db.LoadDB()
 	if err != nil {
-		t.Errorf("Expected error to be nil but found %s", err.Error())
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
 	if len(data.Chirps) != 0 {
 		t.Errorf("Expected '0' but found %d", len(data.Chirps))
@@ -153,18 +154,18 @@ func TestWriteData(t *testing.T) {
 	fmt.Println("Test case 1 - Writing data to new database")
 	Db, err := NewDB(dbPath)
 	if err != nil {
-		t.Errorf("Expected error to be nil but found %s", err.Error())
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
-	dbStruct := DBStructure{
-		Chirps: make(map[int]Chirp),
+	dbStruct := objects.DBStructure{
+		Chirps: make(map[int]objects.Chirp),
 	}
 	err = Db.writeDB(dbStruct)
 	if err != nil {
-		t.Errorf("Expected error to be nil but found %s", err.Error())
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
 	data, err := Db.LoadDB()
 	if err != nil {
-		t.Errorf("Expected error to be nil but found %s", err.Error())
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
 	if len(data.Chirps) != 0 {
 		t.Errorf("Expected '0' but found %d", len(data.Chirps))
@@ -176,7 +177,7 @@ func TestSortChirps(t *testing.T) {
 	fmt.Println("Test case 1 - Test sorting two chirps")
 	Db, err := NewDB(dbPath)
 	if err != nil {
-		t.Errorf("Expected error to be nil but found %s", err.Error())
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
 	Db.CreateChirp("Test String 1")
 	Db.CreateChirp("Test String 2")
@@ -187,7 +188,7 @@ func TestSortChirps(t *testing.T) {
 
 	data, err := Db.LoadDB()
 	if err != nil {
-		t.Errorf("Expected error to be nil but found %s", err.Error())
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
 	result := SortChirps(data.Chirps)
 	if len(result) != 6 {
@@ -195,7 +196,7 @@ func TestSortChirps(t *testing.T) {
 	}
 
 	fmt.Println("Test case 2 - Manually creating a new map and sorting")
-	chirps := map[int]Chirp{
+	chirps := map[int]objects.Chirp{
 		3: {
 			ID:   3,
 			Body: "Text 3",
@@ -220,13 +221,14 @@ func TestRetrieveChirp(t *testing.T) {
 	fmt.Println("Test case 1 - Fetch an ID that does exist")
 	Db, err := NewDB(dbPath)
 	if err != nil {
-		t.Errorf("Expected error to be nil but found %s", err.Error())
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
 	data, err := Db.LoadDB()
 	if err != nil {
-		t.Errorf("Expected error to be nil but found %s", err.Error())
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
 	Db.CreateChirp("Test String 1")
+	data, _ = Db.LoadDB()
 	_, exist := RetrieveChirp(1, data.Chirps)
 	if !exist {
 		t.Errorf("Expected 'true', but found %v", exist)
@@ -236,4 +238,67 @@ func TestRetrieveChirp(t *testing.T) {
 	if exist {
 		t.Errorf("Expected 'false', but found %v", exist)
 	}
+	os.Remove(dbPath)
+}
+
+func TestValidateUser(t *testing.T) {
+	fmt.Println("Test case 1 - Email does not exist")
+	Db, err := NewDB(dbPath)
+	if err != nil {
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
+	}
+	data, err := Db.LoadDB()
+	if err != nil {
+		t.Errorf("Expected error to be nil but found %s", err.Error())
+	}
+	exist, _ := ValidateUser(data, "abc123gmail.com")
+	if exist {
+		t.Errorf("Expected 'false' but found 'true'")
+	}
+	_, err = Db.CreateUser("abc123gmail.com", []byte("passwordTest"))
+	if err != nil {
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
+	}
+
+	fmt.Println("Test case 2 - Email does exist (error)")
+	data, _ = Db.LoadDB()
+	_, err = ValidateUser(data, "abc123gmail.com")
+	if err == nil {
+		t.Errorf("Expected 'error' but found 'nil'")
+	}
+	os.Remove(dbPath)
+}
+
+func TestValidatePassword(t *testing.T) {
+	fmt.Println("Test case 1 - Password found")
+	Db, err := NewDB(dbPath)
+	if err != nil {
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
+	}
+	data, err := Db.LoadDB()
+	if err != nil {
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
+	}
+	exist, _ := ValidateUser(data, "abc123gmail.com")
+	if exist {
+		t.Errorf("Expected 'false' but found 'true'")
+	}
+	_, err = Db.CreateUser("abc123gmail.com", []byte("passwordTest"))
+	if err != nil {
+		t.Errorf("Expected error to be 'nil' but found: %s", err.Error())
+	}
+	data, err = Db.LoadDB()
+	if err != nil {
+		t.Errorf("Expected error to be nil but found: %s", err.Error())
+	}
+	_, err = ValidateLogin(data, "abc123gmail.com", []byte("passwordTest"))
+	if err != nil {
+		t.Errorf("Expected 'nil', but found %s", err.Error())
+	}
+	fmt.Println("Test case 2 - Password not found")
+	_, err = ValidateLogin(data, "abc123gmail.com", []byte("abc12345"))
+	if err == nil {
+		t.Errorf("Expected 'error', but found %v", err)
+	}
+	os.Remove(dbPath)
 }

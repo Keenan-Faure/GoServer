@@ -47,6 +47,7 @@ func main() {
 	api_router.Post("/chirps", api.PostValidate)
 	api_router.Post("/users", api.PostUser)
 	api_router.Get("/chirps", api.GetChirps)
+	api_router.Post("/login", api.UserLogin)
 	api_router.Get("/chirps/{chirpID}", api.GetChirp)
 	admin_router.Get("/metrics", apiCfg.metrics)
 
