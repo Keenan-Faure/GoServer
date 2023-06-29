@@ -11,13 +11,20 @@ type RequestBodyUser struct {
 }
 
 type RequestBodyLogin struct {
-	Password string `json:"password"`
-	Email    string `json:"email"`
+	Password       string `json:"password"`
+	Email          string `json:"email"`
+	ExpiresSeconds int    `json:"expires_in_seconds"`
 }
 
 type ResponseUser struct {
 	ID    int    `json:"id"`
 	Email string `json:"email"`
+}
+
+type ResponseUserLogon struct {
+	ID    int    `json:"id"`
+	Email string `json:"email"`
+	Token string `json:"token"`
 }
 
 // Data Objects

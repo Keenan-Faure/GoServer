@@ -174,7 +174,23 @@ func (db *DB) CreateUser(email string, password []byte) (objects.User, error) {
 	return newUser, nil
 }
 
-//Db Utils
+// updates a user in the database
+func (db *DB) UpdateUser(id int, newEmail, newPassword string, database objects.DBStructure) (objects.User, error) {
+	if id == 0 {
+		return objects.User{}, errors.New("invalid ID")
+	}
+	db.mux.Lock()
+	defer db.mux.Unlock()
+	if entry, ok := database.Users[id]; ok {
+		entry.Email = newEmail
+		entry.Password = []byte(newPassword)
+		database.Users[id] = entry
+		return entry, nil
+	}
+	return objects.User{}, errors.New("id not found in the database")
+}
+
+//helper functions
 
 // validateUser confirms if a user with the same email already exists
 func ValidateUser(data objects.DBStructure, email string) (bool, error) {
@@ -187,7 +203,7 @@ func ValidateUser(data objects.DBStructure, email string) (bool, error) {
 	return false, nil
 }
 
-// If the password exists it returns the record of the user and nil if found
+// If the password exists it returns the record of the (user, nil) if found
 func ValidateLogin(data objects.DBStructure, email string, password []byte) (objects.User, error) {
 	_, err := ValidateUser(data, email)
 	if err == nil {
@@ -201,4 +217,15 @@ func ValidateLogin(data objects.DBStructure, email string, password []byte) (obj
 		continue
 	}
 	return objects.User{}, errors.New("password does not exist in database")
+}
+
+// if the id exists it returns (true, nil)
+func ValidateUserByID(data objects.DBStructure, id int) (bool, error) {
+	for _, value := range data.Users {
+		if value.ID == id {
+			return true, nil
+		}
+		continue
+	}
+	return false, errors.New("unable to find user with id")
 }

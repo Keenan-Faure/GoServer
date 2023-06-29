@@ -44,11 +44,13 @@ func main() {
 	//Create a new router to bind the /healthz and /metrics to register the endpoints on,
 	//and then r.Mount() that router at /api in our main router.
 	api_router.Get("/healthz", healthz)
-	api_router.Post("/chirps", api.PostValidate)
-	api_router.Post("/users", api.PostUser)
 	api_router.Get("/chirps", api.GetChirps)
-	api_router.Post("/login", api.UserLogin)
 	api_router.Get("/chirps/{chirpID}", api.GetChirp)
+	api_router.Post("/chirps", api.PostValidate)
+	api_router.Post("/login", api.UserLogin)
+	api_router.Post("/users", api.PostUser)
+	api_router.Put("/users", api.UpdateUsers)
+
 	admin_router.Get("/metrics", apiCfg.metrics)
 
 	//re-routes the localhost:8080/metrics to be localhost:8080/api/metrics
