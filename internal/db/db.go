@@ -7,6 +7,7 @@ import (
 	"os"
 	"sort"
 	"sync"
+	"time"
 	"utils"
 
 	"golang.org/x/crypto/bcrypt"
@@ -64,8 +65,9 @@ func (db *DB) AddChirp(data objects.DBStructure, chirp objects.Chirp) {
 // ensureDB creates a new database file if it doesn't exist
 func (db *DB) ensureDB() error {
 	rawData := objects.DBStructure{
-		Chirps: make(map[int]objects.Chirp),
-		Users:  make(map[int]objects.User),
+		Chirps:        make(map[int]objects.Chirp),
+		Users:         make(map[int]objects.User),
+		RevokedTokens: make(map[time.Time]string),
 	}
 	data, _ := json.MarshalIndent(rawData, "", " ")
 	err := os.WriteFile(db.path, data, 0644)
@@ -116,6 +118,86 @@ func (db *DB) writeDB(dbStructure objects.DBStructure) error {
 	return nil
 }
 
+// creates a new User and saves it to disk
+func (db *DB) CreateUser(email string, password []byte) (objects.User, error) {
+	//get the ID of the new Chirp
+	data, err := db.LoadDB()
+	if err != nil {
+		return objects.User{}, err
+	}
+	exist, err := ValidateUser(data, email)
+	if exist {
+		return objects.User{}, err
+	}
+	hashedPwd, err := utils.HashPassword(password)
+	if err != nil {
+		return objects.User{}, err
+	}
+	newUser := objects.User{
+		ID:       len(data.Users) + 1,
+		Email:    email,
+		Password: hashedPwd,
+	}
+	data.Users[len(data.Users)+1] = newUser
+	err = db.writeDB(data)
+	if err != nil {
+		return objects.User{}, err
+	}
+	return newUser, nil
+}
+
+func (db *DB) GetUserByID(data objects.DBStructure, id int) (objects.User, error) {
+	for _, value := range data.Users {
+		if value.ID == id {
+			return value, nil
+		}
+		continue
+	}
+	return objects.User{}, errors.New("unable to find user with id")
+}
+
+// updates a user in the database
+func (db *DB) UpdateUser(id int, newEmail, newPassword string, database objects.DBStructure) (objects.User, error) {
+	if id == 0 {
+		return objects.User{}, errors.New("invalid ID")
+	}
+	db.mux.Lock()
+	if entry, ok := database.Users[id]; ok {
+		db.mux.Unlock()
+		entry.Email = newEmail
+		newPsw, err := utils.HashPassword([]byte(newPassword))
+		if err != nil {
+			return objects.User{}, err
+		}
+		entry.Password = newPsw
+		database.Users[id] = entry
+		defer db.writeDB(database)
+		return entry, nil
+	}
+	return objects.User{}, errors.New("id not found in the database")
+}
+
+// revokes a JWT Token
+func (db *DB) RevokeToken(token string, database objects.DBStructure) error {
+	database.RevokedTokens[time.Now().UTC()] = token
+	return db.writeDB(database)
+}
+
+// checks if a JWT Token has been revoked
+func (db *DB) IsTokenRevoked(token string, database objects.DBStructure) bool {
+	db.mux.Lock()
+	defer db.mux.Unlock()
+	for _, value := range database.RevokedTokens {
+		if value == token {
+			return true
+		}
+		continue
+	}
+	return false
+}
+
+// helper functions
+
 // sorts the chirps in ascending order
 func SortChirps(chirps map[int]objects.Chirp) []objects.Chirp {
 	result := []objects.Chirp{}
@@ -145,57 +227,6 @@ func RetrieveChirp(id int, chirps map[int]objects.Chirp) (objects.Chirp, bool) {
 	}
 	return objects.Chirp{}, false
 }
-
-// creates a new User and saves it to disk
-func (db *DB) CreateUser(email string, password []byte) (objects.User, error) {
-	//get the ID of the new Chirp
-	data, err := db.LoadDB()
-	if err != nil {
-		return objects.User{}, err
-	}
-	exist, err := ValidateUser(data, email)
-	if exist {
-		return objects.User{}, err
-	}
-	hashedPwd, err := utils.HashPassword(password)
-	if err != nil {
-		return objects.User{}, err
-	}
-	newUser := objects.User{
-		ID:       len(data.Users) + 1,
-		Email:    email,
-		Password: hashedPwd,
-	}
-	data.Users[len(data.Users)+1] = newUser
-	err = db.writeDB(data)
-	if err != nil {
-		return objects.User{}, err
-	}
-	return newUser, nil
-}
-
-// updates a user in the database
-func (db *DB) UpdateUser(id int, newEmail, newPassword string, database objects.DBStructure) (objects.User, error) {
-	if id == 0 {
-		return objects.User{}, errors.New("invalid ID")
-	}
-	db.mux.Lock()
-	if entry, ok := database.Users[id]; ok {
-		db.mux.Unlock()
-		entry.Email = newEmail
-		newPsw, err := utils.HashPassword([]byte(newPassword))
-		if err != nil {
-			return objects.User{}, err
-		}
-		entry.Password = newPsw
-		database.Users[id] = entry
-		defer db.writeDB(database)
-		return entry, nil
-	}
-	return objects.User{}, errors.New("id not found in the database")
-}
-
-//helper functions
 
 // validateUser confirms if a user with the same email already exists
 func ValidateUser(data objects.DBStructure, email string) (bool, error) {

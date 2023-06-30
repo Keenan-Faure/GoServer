@@ -14,6 +14,60 @@ import (
 
 const dbPath = "./database.json"
 
+// revokes a refresh token present in the header
+func RevokeRefreshToken(w http.ResponseWriter, r *http.Request) {
+	Db, err := db.NewDB(dbPath)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Error: "+err.Error())
+		return
+	}
+	dbstruct, err := Db.LoadDB()
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Error: "+err.Error())
+		return
+	}
+	jwtToken := ExtractJWT(r.Header.Get("Authorization"))
+	err = Db.RevokeToken(jwtToken, dbstruct)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Error: "+err.Error())
+		return
+	}
+	RespondWithJSON(w, http.StatusOK, objects.ResponseRefreshToken{})
+}
+
+// returns a new access token if the refresh token is valid
+func RefreshToken(w http.ResponseWriter, r *http.Request) {
+	Db, err := db.NewDB(dbPath)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Error: "+err.Error())
+		return
+	}
+	dbstruct, err := Db.LoadDB()
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Error: "+err.Error())
+		return
+	}
+	jwtToken := ExtractJWT(r.Header.Get("Authorization"))
+	usr, err := ValidateJWTRefresh(jwtToken, Db, dbstruct)
+	if err != nil {
+		RespondWithError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+	if err != nil {
+		RespondWithError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+	jwtSecret := []byte(LoadEnv())
+	jwtNewTokenAccess, err := CreateJWTAccess(jwtSecret, usr)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+	}
+	response := objects.ResponseRefreshToken{
+		Token: jwtNewTokenAccess,
+	}
+	RespondWithJSON(w, http.StatusOK, response)
+}
+
 // updates a user's email and password
 // reads header for token
 func UpdateUsers(w http.ResponseWriter, r *http.Request) {
@@ -34,11 +88,9 @@ func UpdateUsers(w http.ResponseWriter, r *http.Request) {
 		RespondWithError(w, http.StatusInternalServerError, "Error: "+err.Error())
 		return
 	}
-	//extract jwt from header and return it
-	authHeader := ExtractJWT(r.Header.Get("Authorization"))
+	jwtToken := ExtractJWT(r.Header.Get("Authorization"))
 
-	//validate jwt
-	id, exist, err := ValidateJWT(authHeader)
+	id, exist, err := ValidateJWTAccess(jwtToken)
 	if err != nil {
 		if exist {
 			RespondWithError(w, http.StatusInternalServerError, err.Error())
@@ -47,7 +99,6 @@ func UpdateUsers(w http.ResponseWriter, r *http.Request) {
 		RespondWithError(w, http.StatusUnauthorized, err.Error())
 		return
 	}
-	//validate user id and update
 	exist, err = db.ValidateUserByID(dbstruct, id)
 	if !exist && err != nil {
 		RespondWithError(w, http.StatusNotFound, err.Error())
@@ -90,14 +141,19 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jwtSecret := []byte(LoadEnv())
-	jwtToken, err := CreateJWT(jwtSecret, params.ExpiresSeconds, usr)
+	jwtTokenAccess, err := CreateJWTAccess(jwtSecret, usr)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+	}
+	jwtTokenRefresh, err := CreateJWTRefresh(jwtSecret, usr)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, err.Error())
 	}
 	response := objects.ResponseUserLogon{
-		ID:    usr.ID,
-		Email: usr.Email,
-		Token: jwtToken,
+		ID:           usr.ID,
+		Email:        usr.Email,
+		Token:        jwtTokenAccess,
+		RefreshToken: jwtTokenRefresh,
 	}
 	RespondWithJSON(w, http.StatusOK, response)
 }

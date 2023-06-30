@@ -1,5 +1,7 @@
 package objects
 
+import "time"
+
 // Request/Response Objects
 type RequestBodyChirp struct {
 	Body string `json:"body"`
@@ -11,9 +13,8 @@ type RequestBodyUser struct {
 }
 
 type RequestBodyLogin struct {
-	Password       string `json:"password"`
-	Email          string `json:"email"`
-	ExpiresSeconds int    `json:"expires_in_seconds"`
+	Password string `json:"password"`
+	Email    string `json:"email"`
 }
 
 type ResponseUser struct {
@@ -22,8 +23,12 @@ type ResponseUser struct {
 }
 
 type ResponseUserLogon struct {
-	ID    int    `json:"id"`
-	Email string `json:"email"`
+	ID           int    `json:"id"`
+	Email        string `json:"email"`
+	Token        string `json:"token"`
+	RefreshToken string `json:"refresh_token"`
+}
+type ResponseRefreshToken struct {
 	Token string `json:"token"`
 }
 
@@ -41,6 +46,7 @@ type User struct {
 
 // Database Structure
 type DBStructure struct {
-	Chirps map[int]Chirp `json:"chirps"`
-	Users  map[int]User  `json:"users"`
+	Chirps        map[int]Chirp        `json:"chirps"`
+	Users         map[int]User         `json:"users"`
+	RevokedTokens map[time.Time]string `json:"revoked_tokens"`
 }

@@ -50,6 +50,8 @@ func main() {
 	api_router.Post("/login", api.UserLogin)
 	api_router.Post("/users", api.PostUser)
 	api_router.Put("/users", api.UpdateUsers)
+	api_router.Post("/refresh", api.RefreshToken)
+	api_router.Post("/revoke", api.RevokeRefreshToken)
 
 	admin_router.Get("/metrics", apiCfg.metrics)
 
