@@ -58,9 +58,9 @@ func UpdateUsers(w http.ResponseWriter, r *http.Request) {
 		RespondWithError(w, http.StatusNotFound, err.Error())
 		return
 	}
-	response := objects.RequestBodyUser{
-		Password: string(updatedUser.Password),
-		Email:    updatedUser.Email,
+	response := objects.ResponseUser{
+		ID:    updatedUser.ID,
+		Email: updatedUser.Email,
 	}
 	RespondWithJSON(w, http.StatusOK, response)
 }

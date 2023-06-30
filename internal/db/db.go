@@ -180,11 +180,16 @@ func (db *DB) UpdateUser(id int, newEmail, newPassword string, database objects.
 		return objects.User{}, errors.New("invalid ID")
 	}
 	db.mux.Lock()
-	defer db.mux.Unlock()
 	if entry, ok := database.Users[id]; ok {
+		db.mux.Unlock()
 		entry.Email = newEmail
-		entry.Password = []byte(newPassword)
+		newPsw, err := utils.HashPassword([]byte(newPassword))
+		if err != nil {
+			return objects.User{}, err
+		}
+		entry.Password = newPsw
 		database.Users[id] = entry
+		defer db.writeDB(database)
 		return entry, nil
 	}
 	return objects.User{}, errors.New("id not found in the database")
