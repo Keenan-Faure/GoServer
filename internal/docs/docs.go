@@ -1,7 +1,6 @@
 package docs
 
 import (
-	"encoding/json"
 	"objects"
 	"time"
 )
@@ -30,32 +29,41 @@ func Endpoints() objects.Endpoints {
 
 func createRoutes() map[string]objects.Route {
 	routes := map[string]objects.Route{
-		"/": objects.Route{
-			Supports: []string{"GET"},
+		"/endpoints": objects.Route{
+			Supports:    []string{"GET"},
+			URL:         "{{baseURL}}/api/endpoints",
+			Params:      map[string]string{},
+			AcceptsData: false,
+			Format:      []string{},
+		},
+		"/healthz": objects.Route{
+			Supports:    []string{"GET"},
+			URL:         "{{baseURL}}/api/chirps",
+			Params:      map[string]string{},
+			AcceptsData: false,
+			Format:      []string{},
+		},
+		"/chirps/{{id}}": objects.Route{
+			Supports:    []string{"GET"},
+			URL:         "{{baseURL}}/api/chirps/{{id}}",
+			Params:      map[string]string{},
+			AcceptsData: false,
+			Format:      []string{},
+		},
+		"/chirps": objects.Route{
+			Supports:    []string{"GET"},
+			URL:         "{{baseURL}}/api/chirps/{{id}}",
+			Params:      map[string]string{},
+			AcceptsData: false,
+			Format:      []string{},
+		},
+		"/chirps": objects.Route{
+			Supports:    []string{"POST"},
+			URL:         "{{baseURL}}/api/chirps",
+			Params:      map[string]string{},
+			AcceptsData: false,
+			Format:      []string{},
 		},
 	}
 	return routes
-}
-
-func createRoute(
-	supports []string,
-	url string,
-	params []string,
-	acceptsData bool,
-	format interface{}) objects.Route {
-	route := objects.Route{}
-	for _, value := range supports {
-		route.Supports = append(route.Supports, value)
-	}
-	route.URL = url
-	for _, value := range params {
-		route.Params = append(route.Params, value)
-	}
-	route.AcceptsData = acceptsData
-	jsonFormat, err := json.Marshal(format)
-	if err != nil {
-		route.Format = nil
-	}
-	route.Format = jsonFormat
-	return route
 }

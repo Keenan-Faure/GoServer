@@ -78,9 +78,9 @@ type Endpoints struct {
 }
 
 type Route struct {
-	Supports    []string `json:"supports"`
-	URL         string   `json:"url"`
-	Params      []string `json:"params"`
-	AcceptsData bool     `json:"accepts_data"`
-	Format      any      `format`
+	Supports    []string          `json:"supports"`
+	URL         string            `json:"url"`
+	Params      map[string]string `json:"params"`
+	AcceptsData bool              `json:"accepts_data"`
+	Format      any               `format`
 }
