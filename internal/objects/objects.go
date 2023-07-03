@@ -80,7 +80,12 @@ type Endpoints struct {
 type Route struct {
 	Supports    []string          `json:"supports"`
 	URL         string            `json:"url"`
-	Params      map[string]string `json:"params"`
+	Params      map[string]Params `json:"params"`
 	AcceptsData bool              `json:"accepts_data"`
 	Format      any               `format`
+}
+
+type Params struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }

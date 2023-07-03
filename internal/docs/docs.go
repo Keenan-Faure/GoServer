@@ -15,10 +15,8 @@ func Endpoints() objects.Endpoints {
 				Supports: []string{
 					"GET",
 				},
-				URL: "",
-				Params: []string{
-					"",
-				},
+				URL:         "",
+				Params:      map[string]objects.Params{},
 				AcceptsData: false,
 			},
 		},
@@ -29,40 +27,40 @@ func Endpoints() objects.Endpoints {
 
 func createRoutes() map[string]objects.Route {
 	routes := map[string]objects.Route{
-		"/endpoints": objects.Route{
+		"GET /endpoints": objects.Route{
 			Supports:    []string{"GET"},
 			URL:         "{{baseURL}}/api/endpoints",
-			Params:      map[string]string{},
+			Params:      map[string]objects.Params{},
 			AcceptsData: false,
 			Format:      []string{},
 		},
-		"/healthz": objects.Route{
+		"GET /healthz": objects.Route{
 			Supports:    []string{"GET"},
 			URL:         "{{baseURL}}/api/chirps",
-			Params:      map[string]string{},
+			Params:      map[string]objects.Params{},
 			AcceptsData: false,
 			Format:      []string{},
 		},
-		"/chirps/{{id}}": objects.Route{
+		"GET /chirps/{{id}}": objects.Route{
 			Supports:    []string{"GET"},
 			URL:         "{{baseURL}}/api/chirps/{{id}}",
-			Params:      map[string]string{},
+			Params:      map[string]objects.Params{},
 			AcceptsData: false,
 			Format:      []string{},
 		},
-		"/chirps": objects.Route{
+		"GET /chirps": objects.Route{
 			Supports:    []string{"GET"},
 			URL:         "{{baseURL}}/api/chirps/{{id}}",
-			Params:      map[string]string{},
+			Params:      map[string]objects.Params{},
 			AcceptsData: false,
 			Format:      []string{},
 		},
-		"/chirps": objects.Route{
+		"POST /chirps": objects.Route{
 			Supports:    []string{"POST"},
 			URL:         "{{baseURL}}/api/chirps",
-			Params:      map[string]string{},
+			Params:      map[string]objects.Params{},
 			AcceptsData: false,
-			Format:      []string{},
+			Format:      objects.RequestBodyChirp{},
 		},
 	}
 	return routes
