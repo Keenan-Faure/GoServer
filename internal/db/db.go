@@ -135,9 +135,10 @@ func (db *DB) CreateUser(email string, password []byte) (objects.User, error) {
 		return objects.User{}, err
 	}
 	newUser := objects.User{
-		ID:       len(data.Users) + 1,
-		Email:    email,
-		Password: hashedPwd,
+		ID:          len(data.Users) + 1,
+		Email:       email,
+		Password:    hashedPwd,
+		IsChirpyRed: false,
 	}
 	data.Users[len(data.Users)+1] = newUser
 	err = db.writeDB(data)
@@ -147,6 +148,7 @@ func (db *DB) CreateUser(email string, password []byte) (objects.User, error) {
 	return newUser, nil
 }
 
+// gets the user by id and returns the record
 func (db *DB) GetUserByID(data objects.DBStructure, id int) (objects.User, error) {
 	for _, value := range data.Users {
 		if value.ID == id {
@@ -158,7 +160,7 @@ func (db *DB) GetUserByID(data objects.DBStructure, id int) (objects.User, error
 }
 
 // updates a user in the database
-func (db *DB) UpdateUser(id int, newEmail, newPassword string, database objects.DBStructure) (objects.User, error) {
+func (db *DB) UpdateUser(id int, newEmail, newPassword string, isChirpy bool, database objects.DBStructure) (objects.User, error) {
 	if id == 0 {
 		return objects.User{}, errors.New("invalid ID")
 	}
@@ -166,11 +168,28 @@ func (db *DB) UpdateUser(id int, newEmail, newPassword string, database objects.
 	if entry, ok := database.Users[id]; ok {
 		db.mux.Unlock()
 		entry.Email = newEmail
+		entry.IsChirpyRed = isChirpy
 		newPsw, err := utils.HashPassword([]byte(newPassword))
 		if err != nil {
 			return objects.User{}, err
 		}
 		entry.Password = newPsw
+		database.Users[id] = entry
+		defer db.writeDB(database)
+		return entry, nil
+	}
+	return objects.User{}, errors.New("id not found in the database")
+}
+
+// updates a users is_chirpy_red status in the database
+func (db *DB) UpdateUserUpgrade(id int, isChirpy bool, database objects.DBStructure) (objects.User, error) {
+	if id == 0 {
+		return objects.User{}, errors.New("invalid ID")
+	}
+	db.mux.Lock()
+	if entry, ok := database.Users[id]; ok {
+		db.mux.Unlock()
+		entry.IsChirpyRed = isChirpy
 		database.Users[id] = entry
 		defer db.writeDB(database)
 		return entry, nil

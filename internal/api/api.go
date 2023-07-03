@@ -14,6 +14,58 @@ import (
 
 const dbPath = "./database.json"
 
+// webhook that accept payment details from `Polka` for a user
+func PostWebhook(w http.ResponseWriter, r *http.Request) {
+	// _ = LoadAPIKey()
+	apiKey := ExtractAPIKey(r.Header.Get("Authorization"))
+	if apiKey == "" {
+		RespondWithJSON(w, http.StatusUnauthorized, objects.BaseResponse{
+			Body: "",
+		})
+		return
+	}
+	// if apiKey != apiSecret {
+	// 	RespondWithJSON(w, http.StatusUnauthorized, objects.BaseResponse{
+	// 		Body: "",
+	// 	})
+	// 	return
+	// }
+	decoder := json.NewDecoder(r.Body)
+	params := objects.WebhookRequest{}
+	err := decoder.Decode(&params)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		return
+	}
+	if params.Event != "user.upgraded" {
+		RespondWithJSON(w, http.StatusOK, objects.BaseResponse{
+			Body: "",
+		})
+		return
+	}
+	Db, err := db.NewDB(dbPath)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Error: "+err.Error())
+		return
+	}
+	dbstruct, err := Db.LoadDB()
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Error: "+err.Error())
+		return
+	}
+	usr, err := Db.GetUserByID(dbstruct, params.Data.UserID)
+	if err != nil {
+		RespondWithError(w, http.StatusNotFound, err.Error())
+	}
+	_, err = Db.UpdateUserUpgrade(usr.ID, true, dbstruct)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+	}
+	RespondWithJSON(w, http.StatusOK, objects.BaseResponse{
+		Body: "",
+	})
+}
+
 // revokes a refresh token present in the header
 func RevokeRefreshToken(w http.ResponseWriter, r *http.Request) {
 	Db, err := db.NewDB(dbPath)
@@ -57,7 +109,7 @@ func RefreshToken(w http.ResponseWriter, r *http.Request) {
 		RespondWithError(w, http.StatusUnauthorized, err.Error())
 		return
 	}
-	jwtSecret := []byte(LoadEnv())
+	jwtSecret := []byte(LoadJWTSecret())
 	jwtNewTokenAccess, err := CreateJWTAccess(jwtSecret, usr)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, err.Error())
@@ -104,7 +156,7 @@ func UpdateUsers(w http.ResponseWriter, r *http.Request) {
 		RespondWithError(w, http.StatusNotFound, err.Error())
 		return
 	}
-	updatedUser, err := Db.UpdateUser(id, params.Email, params.Password, dbstruct)
+	updatedUser, err := Db.UpdateUser(id, params.Email, params.Password, false, dbstruct)
 	if err != nil {
 		RespondWithError(w, http.StatusNotFound, err.Error())
 		return
@@ -140,7 +192,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 		RespondWithError(w, http.StatusUnauthorized, err.Error())
 		return
 	}
-	jwtSecret := []byte(LoadEnv())
+	jwtSecret := []byte(LoadJWTSecret())
 	jwtTokenAccess, err := CreateJWTAccess(jwtSecret, usr)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, err.Error())
@@ -152,6 +204,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 	response := objects.ResponseUserLogon{
 		ID:           usr.ID,
 		Email:        usr.Email,
+		IsChirpyRed:  usr.IsChirpyRed,
 		Token:        jwtTokenAccess,
 		RefreshToken: jwtTokenRefresh,
 	}

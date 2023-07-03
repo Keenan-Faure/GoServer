@@ -2,8 +2,9 @@ go 1.20
 
 use (
 	.
-	./internal/db
 	./internal/api
-	./internal/utils
+	./internal/db
+	./internal/docs
 	./internal/objects
+	./internal/utils
 )

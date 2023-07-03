@@ -29,20 +29,16 @@ func main() {
 		}
 	}
 
-	//creates new Chi router
 	r := chi.NewRouter()
 	api_router := chi.NewRouter()
 	admin_router := chi.NewRouter()
 
 	fs := http.FileServer(http.Dir(filePath))
 
-	//Wrap the http.FileServer handler with the middleware
 	fsHandle := http.StripPrefix("/app", apiCfg.middlewareMetricsInc(fs))
 	r.Handle("/app", fsHandle)
 	r.Handle("/app/*", fsHandle)
 
-	//Create a new router to bind the /healthz and /metrics to register the endpoints on,
-	//and then r.Mount() that router at /api in our main router.
 	api_router.Get("/healthz", healthz)
 	api_router.Get("/chirps", api.GetChirps)
 	api_router.Get("/chirps/{chirpID}", api.GetChirp)
@@ -53,10 +49,10 @@ func main() {
 	api_router.Put("/users", api.UpdateUsers)
 	api_router.Post("/refresh", api.RefreshToken)
 	api_router.Post("/revoke", api.RevokeRefreshToken)
+	api_router.Post("/polka/webhooks", api.PostWebhook)
 
 	admin_router.Get("/metrics", apiCfg.metrics)
 
-	//re-routes the localhost:8080/metrics to be localhost:8080/api/metrics
 	r.Mount("/api", api_router)
 	r.Mount("/admin", admin_router)
 

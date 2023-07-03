@@ -55,7 +55,7 @@ func CreateJWTRefresh(jwtSecret []byte, user objects.User) (string, error) {
 // checks if the JWT Access token is valid
 func ValidateJWTAccess(jwtToken string) (int, bool, error) {
 	token, err := jwt.ParseWithClaims(jwtToken, &jwt.RegisteredClaims{}, func(t *jwt.Token) (interface{}, error) {
-		return []byte(LoadEnv()), nil
+		return []byte(LoadJWTSecret()), nil
 	})
 	if err != nil {
 		return 0, false, err
@@ -80,7 +80,7 @@ func ValidateJWTAccess(jwtToken string) (int, bool, error) {
 // checks if the JWT Refresh token is valid
 func ValidateJWTRefresh(jwtToken string, db *db.DB, database objects.DBStructure) (objects.User, error) {
 	token, err := jwt.ParseWithClaims(jwtToken, &jwt.RegisteredClaims{}, func(t *jwt.Token) (interface{}, error) {
-		return []byte(LoadEnv()), nil
+		return []byte(LoadJWTSecret()), nil
 	})
 	if err != nil {
 		return objects.User{}, err
@@ -122,6 +122,14 @@ func isExpired(tokenDate *jwt.NumericDate) bool {
 
 // extracts the JWT from the auth string
 func ExtractJWT(authString string) string {
+	return authString[7:]
+}
+
+// extracts the API Key from the auth string
+func ExtractAPIKey(authString string) string {
+	if authString == "" {
+		return ""
+	}
 	return authString[7:]
 }
 

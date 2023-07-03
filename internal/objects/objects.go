@@ -2,6 +2,12 @@ package objects
 
 import "time"
 
+// Webhook Request Format
+type WebhookRequest struct {
+	Event string      `json:"event"`
+	Data  WebhookUser `json:"data"`
+}
+
 // Request/Response Objects
 type RequestBodyChirp struct {
 	Body string `json:"body"`
@@ -29,6 +35,7 @@ type ResponseUser struct {
 type ResponseUserLogon struct {
 	ID           int    `json:"id"`
 	Email        string `json:"email"`
+	IsChirpyRed  bool   `json:"is_chirpy_red"`
 	Token        string `json:"token"`
 	RefreshToken string `json:"refresh_token"`
 }
@@ -44,9 +51,14 @@ type Chirp struct {
 }
 
 type User struct {
-	ID       int    `json:"id"`
-	Email    string `json:"email"`
-	Password []byte `json:"password"`
+	ID          int    `json:"id"`
+	Email       string `json:"email"`
+	Password    []byte `json:"password"`
+	IsChirpyRed bool   `json:"is_chirpy_red"`
+}
+
+type WebhookUser struct {
+	UserID int `json:"user_id"`
 }
 
 // Database Structure
@@ -54,4 +66,21 @@ type DBStructure struct {
 	Chirps        map[int]Chirp        `json:"chirps"`
 	Users         map[int]User         `json:"users"`
 	RevokedTokens map[time.Time]string `json:"revoked_tokens"`
+}
+
+// Docs Endpoints
+type Endpoints struct {
+	Status      bool             `json:"status"`
+	Description string           `json:"description"`
+	Routes      map[string]Route `json:"routes"`
+	Version     string           `json:"version"`
+	Time        time.Time        `json:"time"`
+}
+
+type Route struct {
+	Supports    []string `json:"supports"`
+	URL         string   `json:"url"`
+	Params      []string `json:"params"`
+	AcceptsData bool     `json:"accepts_data"`
+	Format      any      `format`
 }
