@@ -29,7 +29,7 @@ func TestCreateChirp(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
-	chirp, err := Db.CreateChirp("Test")
+	chirp, err := Db.CreateChirp("Test", 1)
 	if err != nil {
 		t.Errorf("Expected nil but found error")
 	}
@@ -45,7 +45,7 @@ func TestCreateChirp(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexpected error")
 	}
-	chirp, err = Db.CreateChirp("Test")
+	chirp, err = Db.CreateChirp("Test", 1)
 	if err != nil {
 		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
@@ -61,7 +61,7 @@ func TestCreateChirp(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
-	chirp, err = Db.CreateChirp("Test String")
+	chirp, err = Db.CreateChirp("Test String", 2)
 	if err != nil {
 		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
@@ -123,7 +123,7 @@ func TestGetChirps(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
-	Db.CreateChirp("Test String")
+	Db.CreateChirp("Test String", 1)
 	chirps, err = Db.GetChirps()
 	if err != nil {
 		t.Errorf("Expected error to be nil but found: %s", err.Error())
@@ -179,12 +179,12 @@ func TestSortChirps(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
-	Db.CreateChirp("Test String 1")
-	Db.CreateChirp("Test String 2")
-	Db.CreateChirp("Test String 3")
-	Db.CreateChirp("Test String 4")
-	Db.CreateChirp("Test String 5")
-	Db.CreateChirp("Test String 6")
+	Db.CreateChirp("Test String 1", 1)
+	Db.CreateChirp("Test String 2", 1)
+	Db.CreateChirp("Test String 3", 1)
+	Db.CreateChirp("Test String 4", 2)
+	Db.CreateChirp("Test String 5", 2)
+	Db.CreateChirp("Test String 6", 3)
 
 	data, err := Db.LoadDB()
 	if err != nil {
@@ -227,7 +227,7 @@ func TestRetrieveChirp(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
-	Db.CreateChirp("Test String 1")
+	Db.CreateChirp("Test String 1", 1)
 	data, _ = Db.LoadDB()
 	_, exist := RetrieveChirp(1, data.Chirps)
 	if !exist {

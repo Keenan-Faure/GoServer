@@ -17,6 +17,10 @@ type RequestBodyLogin struct {
 	Email    string `json:"email"`
 }
 
+type BaseResponse struct {
+	Body string `json:"body"`
+}
+
 type ResponseUser struct {
 	ID    int    `json:"id"`
 	Email string `json:"email"`
@@ -34,8 +38,9 @@ type ResponseRefreshToken struct {
 
 // Data Objects
 type Chirp struct {
-	ID   int    `json:"id"`
-	Body string `json:"body"`
+	ID       int    `json:"id"`
+	Body     string `json:"body"`
+	AuthorID int    `json:"author_id"`
 }
 
 type User struct {

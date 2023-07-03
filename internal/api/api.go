@@ -184,11 +184,78 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 	RespondWithJSON(w, http.StatusCreated, response)
 }
 
+// deletes a chirp from the database
+func DelChirp(w http.ResponseWriter, r *http.Request) {
+	chirpID, err := strconv.Atoi(chi.URLParam(r, "chirpID"))
+	if err != nil {
+		RespondWithError(w, http.StatusBadRequest, "error retrieving id")
+	}
+	jwtToken := ExtractJWT(r.Header.Get("Authorization"))
+	id, exist, err := ValidateJWTAccess(jwtToken)
+	if err != nil {
+		if exist {
+			RespondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		RespondWithError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+	Db, err := db.NewDB(dbPath)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Error: "+err.Error())
+		return
+	}
+	dbstruct, err := Db.LoadDB()
+	if err != nil {
+		RespondWithError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	exist, err = db.ValidateUserByID(dbstruct, id)
+	if !exist && err != nil {
+		RespondWithError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	err = Db.ValidateUserChirp(chirpID, id, dbstruct)
+	if err != nil {
+		RespondWithError(w, http.StatusForbidden, err.Error())
+		return
+	}
+	RespondWithJSON(w, http.StatusOK, objects.BaseResponse{
+		Body: "",
+	})
+}
+
 // posts data to the database to add a chirp
-func PostValidate(w http.ResponseWriter, r *http.Request) {
+func PostChirp(w http.ResponseWriter, r *http.Request) {
+	jwtToken := ExtractJWT(r.Header.Get("Authorization"))
+	id, exist, err := ValidateJWTAccess(jwtToken)
+	if err != nil {
+		if exist {
+			RespondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		RespondWithError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+	Db, err := db.NewDB(dbPath)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Error: "+err.Error())
+		return
+	}
+	dbstruct, err := Db.LoadDB()
+	if err != nil {
+		RespondWithError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	exist, err = db.ValidateUserByID(dbstruct, id)
+	if !exist && err != nil {
+		RespondWithError(w, http.StatusNotFound, err.Error())
+		return
+	}
+
 	decoder := json.NewDecoder(r.Body)
 	params := objects.RequestBodyChirp{}
-	err := decoder.Decode(&params)
+	err = decoder.Decode(&params)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
 		return
@@ -198,12 +265,7 @@ func PostValidate(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			RespondWithError(w, http.StatusBadRequest, "invalid request body")
 		} else {
-			Db, err := db.NewDB(dbPath)
-			if err != nil {
-				RespondWithError(w, http.StatusInternalServerError, "Error: "+err.Error())
-				return
-			}
-			chirp, err := Db.CreateChirp(validated)
+			chirp, err := Db.CreateChirp(validated, id)
 			if err != nil {
 				RespondWithError(w, http.StatusInternalServerError, "Error: "+err.Error())
 				return

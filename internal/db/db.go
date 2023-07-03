@@ -6,6 +6,7 @@ import (
 	"objects"
 	"os"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 	"utils"
@@ -37,15 +38,16 @@ func NewDB(path string) (*DB, error) {
 }
 
 // CreateChirp creates a new chirp and saves it to disk
-func (db *DB) CreateChirp(body string) (objects.Chirp, error) {
+func (db *DB) CreateChirp(body string, author int) (objects.Chirp, error) {
 	//get the ID of the new Chirp
 	data, err := db.LoadDB()
 	if err != nil {
 		return objects.Chirp{}, err
 	}
 	newChirp := objects.Chirp{
-		ID:   len(data.Chirps) + 1,
-		Body: body,
+		ID:       len(data.Chirps) + 1,
+		Body:     body,
+		AuthorID: author,
 	}
 	db.AddChirp(data, newChirp)
 	err = db.writeDB(data)
@@ -120,7 +122,6 @@ func (db *DB) writeDB(dbStructure objects.DBStructure) error {
 
 // creates a new User and saves it to disk
 func (db *DB) CreateUser(email string, password []byte) (objects.User, error) {
-	//get the ID of the new Chirp
 	data, err := db.LoadDB()
 	if err != nil {
 		return objects.User{}, err
@@ -185,8 +186,6 @@ func (db *DB) RevokeToken(token string, database objects.DBStructure) error {
 
 // checks if a JWT Token has been revoked
 func (db *DB) IsTokenRevoked(token string, database objects.DBStructure) bool {
-	db.mux.Lock()
-	defer db.mux.Unlock()
 	for _, value := range database.RevokedTokens {
 		if value == token {
 			return true
@@ -194,6 +193,19 @@ func (db *DB) IsTokenRevoked(token string, database objects.DBStructure) bool {
 		continue
 	}
 	return false
+}
+
+// removes a chrip from the specified database
+func (db *DB) DeleteChirp(id int, database objects.DBStructure) error {
+	for key, value := range database.Chirps {
+		if value.ID == id {
+			delete(database.Chirps, key)
+			db.writeDB(database)
+			return nil
+		}
+		continue
+	}
+	return errors.New("chirp with id '" + strconv.Itoa(id) + "' not found")
 }
 
 // helper functions
@@ -217,7 +229,7 @@ func SortChirps(chirps map[int]objects.Chirp) []objects.Chirp {
 	return result
 }
 
-// retrieves a chirp that has the respective `id`
+// retrieves a chirp that has the respective id
 func RetrieveChirp(id int, chirps map[int]objects.Chirp) (objects.Chirp, bool) {
 	for key, value := range chirps {
 		if key == id {
@@ -228,7 +240,7 @@ func RetrieveChirp(id int, chirps map[int]objects.Chirp) (objects.Chirp, bool) {
 	return objects.Chirp{}, false
 }
 
-// validateUser confirms if a user with the same email already exists
+// confirms if a user with the same email already exists
 func ValidateUser(data objects.DBStructure, email string) (bool, error) {
 	for _, value := range data.Users {
 		if value.Email == email {
@@ -239,23 +251,31 @@ func ValidateUser(data objects.DBStructure, email string) (bool, error) {
 	return false, nil
 }
 
-// If the password exists it returns the record of the (user, nil) if found
-func ValidateLogin(data objects.DBStructure, email string, password []byte) (objects.User, error) {
-	_, err := ValidateUser(data, email)
-	if err == nil {
-		return objects.User{}, errors.New("user with email " + email + " does not exist")
-	}
+// returns the user with the respective email address and whether found
+func GetUserByEmail(data objects.DBStructure, email string) (objects.User, bool) {
 	for _, value := range data.Users {
-		valid := bcrypt.CompareHashAndPassword(value.Password, password)
-		if valid == nil {
-			return value, nil
+		if value.Email == email {
+			return value, true
 		}
 		continue
+	}
+	return objects.User{}, false
+}
+
+// determines if the password exists and returns the record of the user if found
+func ValidateLogin(data objects.DBStructure, email string, password []byte) (objects.User, error) {
+	usr, exists := GetUserByEmail(data, email)
+	if !exists {
+		return objects.User{}, errors.New("user with email " + email + " does not exist")
+	}
+	valid := bcrypt.CompareHashAndPassword(usr.Password, password)
+	if valid == nil {
+		return usr, nil
 	}
 	return objects.User{}, errors.New("password does not exist in database")
 }
 
-// if the id exists it returns (true, nil)
+// determines if the user id exists in the database
 func ValidateUserByID(data objects.DBStructure, id int) (bool, error) {
 	for _, value := range data.Users {
 		if value.ID == id {
@@ -264,4 +284,15 @@ func ValidateUserByID(data objects.DBStructure, id int) (bool, error) {
 		continue
 	}
 	return false, errors.New("unable to find user with id")
+}
+
+func (db *DB) ValidateUserChirp(chirpId, userID int, database objects.DBStructure) error {
+	for _, value := range database.Chirps {
+		if value.AuthorID == userID {
+			db.DeleteChirp(chirpId, database)
+			return nil
+		}
+		continue
+	}
+	return errors.New("user does not have any chirps")
 }
