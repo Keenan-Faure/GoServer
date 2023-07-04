@@ -8,6 +8,10 @@ type WebhookRequest struct {
 	Data  WebhookUser `json:"data"`
 }
 
+type WebhookUser struct {
+	UserID int `json:"user_id"`
+}
+
 // Request/Response Objects
 type RequestBodyChirp struct {
 	Body string `json:"body"`
@@ -57,10 +61,6 @@ type User struct {
 	IsChirpyRed bool   `json:"is_chirpy_red"`
 }
 
-type WebhookUser struct {
-	UserID int `json:"user_id"`
-}
-
 // Database Structure
 type DBStructure struct {
 	Chirps        map[int]Chirp        `json:"chirps"`
@@ -78,11 +78,12 @@ type Endpoints struct {
 }
 
 type Route struct {
-	Supports    []string          `json:"supports"`
-	URL         string            `json:"url"`
-	Params      map[string]Params `json:"params"`
-	AcceptsData bool              `json:"accepts_data"`
-	Format      any               `format`
+	Description   string            `json:"description"`
+	Supports      []string          `json:"supports"`
+	Params        map[string]Params `json:"params"`
+	AcceptsData   bool              `json:"accepts_data"`
+	Format        any               `json:"format"`
+	Authorization string            `json:"auth"`
 }
 
 type Params struct {

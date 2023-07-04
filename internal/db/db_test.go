@@ -65,7 +65,7 @@ func TestCreateChirp(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
-	chirps, err := Db.GetChirps()
+	chirps, err := Db.GetChirps("1", "")
 	if err != nil {
 		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
@@ -110,7 +110,7 @@ func TestGetChirps(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
-	chirps, err := Db.GetChirps()
+	chirps, err := Db.GetChirps("", "")
 	if err != nil {
 		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
@@ -124,7 +124,7 @@ func TestGetChirps(t *testing.T) {
 		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
 	Db.CreateChirp("Test String", 1)
-	chirps, err = Db.GetChirps()
+	chirps, err = Db.GetChirps("", "")
 	if err != nil {
 		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
@@ -190,7 +190,7 @@ func TestSortChirps(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected error to be nil but found: %s", err.Error())
 	}
-	result := SortChirps(data.Chirps)
+	result := SortChirpsAsc(data.Chirps)
 	if len(result) != 6 {
 		t.Errorf("Expected 6 but found %d", len(result))
 	}
@@ -210,7 +210,7 @@ func TestSortChirps(t *testing.T) {
 			Body: "Text 1",
 		},
 	}
-	result = SortChirps(chirps)
+	result = SortChirpsAsc(chirps)
 	if len(result) != 3 {
 		t.Errorf("Expected 3 but found %d", len(result))
 	}

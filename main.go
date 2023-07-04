@@ -39,6 +39,7 @@ func main() {
 	r.Handle("/app", fsHandle)
 	r.Handle("/app/*", fsHandle)
 
+	api_router.Get("/", api.Endpoints)
 	api_router.Get("/healthz", healthz)
 	api_router.Get("/chirps", api.GetChirps)
 	api_router.Get("/chirps/{chirpID}", api.GetChirp)

@@ -2,17 +2,22 @@ package api
 
 import (
 	"db"
+	"docs"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"objects"
 	"strconv"
-	"strings"
+	"utils"
 
 	"github.com/go-chi/chi/v5"
 )
 
 const dbPath = "./database.json"
+
+// displays all available endpoints
+func Endpoints(w http.ResponseWriter, r *http.Request) {
+	RespondWithJSON(w, http.StatusOK, docs.Endpoints())
+}
 
 // webhook that accept payment details from `Polka` for a user
 func PostWebhook(w http.ResponseWriter, r *http.Request) {
@@ -268,7 +273,7 @@ func DelChirp(w http.ResponseWriter, r *http.Request) {
 		RespondWithError(w, http.StatusNotFound, err.Error())
 		return
 	}
-	err = Db.ValidateUserChirp(chirpID, id, dbstruct)
+	err = Db.DeleteUserChirp(chirpID, id, dbstruct)
 	if err != nil {
 		RespondWithError(w, http.StatusForbidden, err.Error())
 		return
@@ -314,7 +319,7 @@ func PostChirp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(params.Body) < 140 {
-		validated, err := profane(params.Body)
+		validated, err := utils.Profane(params.Body)
 		if err != nil {
 			RespondWithError(w, http.StatusBadRequest, "invalid request body")
 		} else {
@@ -332,12 +337,14 @@ func PostChirp(w http.ResponseWriter, r *http.Request) {
 
 // Gets all Chirps
 func GetChirps(w http.ResponseWriter, r *http.Request) {
+	author_id := r.URL.Query().Get("author_id")
+	sort := r.URL.Query().Get("sort")
 	Db, err := db.NewDB(dbPath)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Error: "+err.Error())
 		return
 	}
-	chirps, err := Db.GetChirps()
+	chirps, err := Db.GetChirps(author_id, sort)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Error: "+err.Error())
 		return
@@ -404,26 +411,3 @@ func RespondWithError(w http.ResponseWriter, code int, msg string) error {
 }
 
 //helper methods
-
-// profane replaced certain words with asterisks
-// which are defined in a map
-func profane(sentence string) (string, error) {
-	if sentence == "" || len(sentence) == 0 {
-		return "", errors.New("undefined sentence")
-	}
-	result := []string{}
-	words := strings.Split(sentence, " ")
-	damena_kotoba := map[string]string{
-		"kerfuffle": "****",
-		"sharbert":  "****",
-		"fornax":    "****",
-	}
-	for _, value := range words {
-		if entry, ok := damena_kotoba[strings.ToLower(value)]; ok {
-			result = append(result, entry)
-			continue
-		}
-		result = append(result, value)
-	}
-	return strings.Join(result, " "), nil
-}

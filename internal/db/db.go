@@ -80,12 +80,28 @@ func (db *DB) ensureDB() error {
 }
 
 // GetChirps returns all chirps in the database
-func (db *DB) GetChirps() ([]objects.Chirp, error) {
+func (db *DB) GetChirps(authorID string, sort string) ([]objects.Chirp, error) {
 	data, err := db.LoadDB()
 	if err != nil {
 		return []objects.Chirp{}, err
 	}
-	chirps := SortChirps(data.Chirps)
+	if authorID != "" {
+		author_id, err := strconv.Atoi(authorID)
+		if err != nil {
+			return []objects.Chirp{}, err
+		}
+		if sort == "desc" {
+			chirps := SortChirpsDesc(db.GetChirpsByAuthor(author_id, data))
+			return chirps, nil
+		}
+		chirps := SortChirpsAsc(db.GetChirpsByAuthor(author_id, data))
+		return chirps, nil
+	}
+	if sort == "desc" {
+		chirps := SortChirpsDesc(data.Chirps)
+		return chirps, nil
+	}
+	chirps := SortChirpsAsc(data.Chirps)
 	return chirps, nil
 }
 
@@ -214,6 +230,30 @@ func (db *DB) IsTokenRevoked(token string, database objects.DBStructure) bool {
 	return false
 }
 
+// fetches Chirps for a specific author
+func (db *DB) GetChirpsByAuthor(authorID int, data objects.DBStructure) map[int]objects.Chirp {
+	chirps := map[int]objects.Chirp{}
+	for _, value := range data.Chirps {
+		if value.AuthorID == authorID {
+			chirps[value.ID] = value
+		}
+		continue
+	}
+	return chirps
+}
+
+// validates a user
+func (db *DB) DeleteUserChirp(chirpId, userID int, database objects.DBStructure) error {
+	for _, value := range database.Chirps {
+		if value.AuthorID == userID {
+			db.DeleteChirp(chirpId, database)
+			return nil
+		}
+		continue
+	}
+	return errors.New("user does not have any chirps")
+}
+
 // removes a chrip from the specified database
 func (db *DB) DeleteChirp(id int, database objects.DBStructure) error {
 	for key, value := range database.Chirps {
@@ -230,7 +270,7 @@ func (db *DB) DeleteChirp(id int, database objects.DBStructure) error {
 // helper functions
 
 // sorts the chirps in ascending order
-func SortChirps(chirps map[int]objects.Chirp) []objects.Chirp {
+func SortChirpsAsc(chirps map[int]objects.Chirp) []objects.Chirp {
 	result := []objects.Chirp{}
 	if len(chirps) == 0 {
 		return result
@@ -242,6 +282,25 @@ func SortChirps(chirps map[int]objects.Chirp) []objects.Chirp {
 	}
 
 	sort.Ints(keys)
+	for _, k := range keys {
+		result = append(result, chirps[k])
+	}
+	return result
+}
+
+// sorts the chirps in descending order
+func SortChirpsDesc(chirps map[int]objects.Chirp) []objects.Chirp {
+	result := []objects.Chirp{}
+	if len(chirps) == 0 {
+		return result
+	}
+
+	keys := make([]int, 0, len(chirps))
+	for k := range chirps {
+		keys = append(keys, k)
+	}
+
+	sort.Sort(sort.Reverse(sort.IntSlice(keys)))
 	for _, k := range keys {
 		result = append(result, chirps[k])
 	}
@@ -303,15 +362,4 @@ func ValidateUserByID(data objects.DBStructure, id int) (bool, error) {
 		continue
 	}
 	return false, errors.New("unable to find user with id")
-}
-
-func (db *DB) ValidateUserChirp(chirpId, userID int, database objects.DBStructure) error {
-	for _, value := range database.Chirps {
-		if value.AuthorID == userID {
-			db.DeleteChirp(chirpId, database)
-			return nil
-		}
-		continue
-	}
-	return errors.New("user does not have any chirps")
 }
