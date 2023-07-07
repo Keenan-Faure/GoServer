@@ -15,7 +15,7 @@ and very interesting, so I wish to go from baby steps into giant strides from he
 
 ### Goal
 
-The main goal in this project is very simply: it serves as a start in my learning of this amazing language.
+The main goal in this project is very simple: it serves as a start in my learning of this amazing language.
 
 ## Main Features
 
